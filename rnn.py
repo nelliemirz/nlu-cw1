@@ -143,11 +143,12 @@ class RNN(object):
 
 		##########################
 		t = len(x)-1
-		delta_out_t = make_onehot(d[0], self.out_vocab_size)-y[t]
-		delta_in_t = np.dot(self.W.T, delta_out_t)*s[t]*(1-s[t])
-		self.deltaW += np.outer(delta_out_t, s[t])
-		self.deltaV += np.outer(delta_in_t, make_onehot(x[t], self.vocab_size))
-		self.deltaU += np.outer(delta_in_t, s[t-1])
+		delta_out_t = make_onehot(d[0], self.out_vocab_size)-y[-1]
+		delta_in_t = np.dot(self.W.T, delta_out_t)*s[-2]*(1-s[-2])
+
+		self.deltaW += np.outer(delta_out_t, s[-2])
+		self.deltaV += np.outer(delta_in_t, make_onehot(x[-1], self.vocab_size))
+		self.deltaU += np.outer(delta_in_t, s[-3])
 		##########################
 
 
@@ -210,6 +211,7 @@ class RNN(object):
 
 		##########################
 		t = len(x)-1
+
 		delta_out_t = make_onehot(d[0], self.out_vocab_size)-y[t]
 		delta_in_t = np.dot(self.W.T, delta_out_t)*s[t]*(1-s[t])
 
@@ -243,17 +245,11 @@ class RNN(object):
 
 		##########################
 		#assert len(x)==len(d)
-		"""
+
 		y, s = self.predict(x)
 		for t in range(len(x)):
 			d_t_onehot = make_onehot(d[t], self.out_vocab_size)
-			loss_t = - np.inner(d_t_onehot, np.log(y[t]))
-			loss += loss_t
-		"""
-		y, s = self.predict(x)
-		for t in range(len(x)):
-			d_onehot = make_onehot(d[t], self.out_vocab_size)
-			loss -= np.inner(d_onehot, np.log(y[t]))
+			loss -= np.inner(d_t_onehot, np.log(y[t]))
 			##########################
 		return loss
 
@@ -274,8 +270,8 @@ class RNN(object):
 
 		##########################
 		y, s = self.predict(x)
-		d_onehot = make_onehot(d[-1], self.out_vocab_size)
-		loss -= np.inner(d_onehot, np.log(y[-1]))
+		d_t_onehot = make_onehot(d[0], self.out_vocab_size)
+		loss -= np.inner(d_t_onehot, np.log(y[-1]))
 		##########################
 
 		return loss
@@ -298,7 +294,6 @@ class RNN(object):
 		if np.argmax(y[-1]) == d[0]:
 			return 1
 		##########################
-
 		return 0
 
 
@@ -315,11 +310,9 @@ class RNN(object):
 
 		##########################
 		y, s = self.predict(x)
-		y = y[-1]
-		if y[d[0]] > y[d[1]]:
+		if y[-1][d[0]] > y[-1][d[1]]:
 			return 1
 		##########################
-
 		return 0
 
 
@@ -694,12 +687,9 @@ if __name__ == "__main__":
 		##########################
 		rnn = RNN(vocab_size, hidden_dims, vocab_size)
 		rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=1)
-		np.save(data_folder + '/rnn.U.npy', rnn.U)
-		np.save(data_folder + '/rnn.V.npy', rnn.V)
-		np.save(data_folder + '/rnn.W.npy', rnn.W)
-		# rnn.U = np.load("rnn.U.npy")
-		# rnn.V = np.load("rnn.V.npy")
-		# rnn.W = np.load("rnn.W.npy")
+		np.save(data_folder + '/U.npy', rnn.U)
+		np.save(data_folder + '/V.npy', rnn.V)
+		np.save(data_folder + '/W.npy', rnn.W)
 		##########################
 
 		run_loss = -1
@@ -748,14 +738,10 @@ if __name__ == "__main__":
 
 
 		##########################
-		nn = RNN(vocab_size, hidden_dims, vocab_size)
-		rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=1)
-		np.save(data_folder + '/rnn.U.npy', rnn.U)
-		np.save(data_folder + '/rnn.V.npy', rnn.V)
-		np.save(data_folder + '/rnn.W.npy', rnn.W)
+		# --- your code here --- #
 		##########################
 
-		acc = rnn.compute_acc_np(X_dev, D_dev)
+		acc = 0.
 
 		print("Accuracy: %.03f" % acc)
 
