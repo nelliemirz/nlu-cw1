@@ -687,9 +687,9 @@ if __name__ == "__main__":
 		##########################
 		rnn = RNN(vocab_size, hidden_dims, vocab_size)
 		rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=1)
-		np.save(data_folder + '/U.npy', rnn.U)
-		np.save(data_folder + '/V.npy', rnn.V)
-		np.save(data_folder + '/W.npy', rnn.W)
+		np.save(data_folder + '/rnn.U.npy', rnn.U)
+		np.save(data_folder + '/rnn.V.npy', rnn.V)
+		np.save(data_folder + '/rnn.W.npy', rnn.W)
 		##########################
 
 		run_loss = -1
