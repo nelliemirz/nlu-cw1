@@ -739,15 +739,16 @@ if __name__ == "__main__":
 
 		##########################
 		rnn = RNN(vocab_size, hiddim, vocab_size)
-		rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
+		rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
 		np.save(data_folder + '/rnn-np.U.npy', rnn.U)
 		np.save(data_folder + '/rnn-np.V.npy', rnn.V)
 		np.save(data_folder + '/rnn-np.W.npy', rnn.W)
 		##########################
-
-		acc = rnn.compute_acc_np(X_dev, D_dev)
-
 		acc = 0.
+		for i in range(len(X_dev):
+			       acc += rnn.compute_acc_np(X_dev[i], D_dev[i])
+			       acc /= len(X_dev)
+		
 
 		print("Accuracy: %.03f" % acc)
 
