@@ -114,7 +114,7 @@ class RNN(object):
 		for t in reversed(range(len(x))):
 			##########################
 
-			delta_out_t = make_onehot(d[t], self.out_vocab_size)-y[t]
+			delta_out_t = (make_onehot(d[t], self.out_vocab_size)-y[t])
 			delta_in_t = np.dot(self.W.T, delta_out_t)*s[t]*(1-s[t])
 
 			self.deltaW += np.outer(delta_out_t, s[t])
@@ -172,7 +172,7 @@ class RNN(object):
 		for t in reversed(range(len(x))):
 			# print("time {0}".format(t))
 			##########################
-			delta_out_t = make_onehot(d[t], self.out_vocab_size)-y[t]
+			delta_out_t = (make_onehot(d[t], self.out_vocab_size)-y[t])
 			delta_in_t = np.dot(self.W.T, delta_out_t)*s[t]*(1-s[t])
 
 			steps = min([t,steps])
@@ -602,6 +602,20 @@ class RNN(object):
 
 			loss = sum([loss_function(X_dev[i], D_dev[i]) for i in range(len(X_dev))]) / loss_sum
 			acc = sum([self.compute_acc_np(X_dev[i], D_dev[i]) for i in range(len(X_dev))]) / len(X_dev)
+			if epoch == epochs-1:
+				for i in range(len(X_dev)):
+					x = X_dev[i]
+					d = D_dev[i]
+					y, s = self.predict(x)
+					if np.argmax(y[-1]) != d[0]:
+						string = str(i) + ': '
+						for j in x:
+							string += num_to_word[j]
+							string += ' '
+						print(string + '| Expected:' + num_to_word[d[0]])
+						print(' '.join(sents_dev[i][1:]))
+
+
 
 			if log:
 				stdout.write("\tepoch done in %.02f seconds" % (time.time() - t0))
@@ -653,9 +667,9 @@ if __name__ == "__main__":
 		dev_size = 1000
 		vocab_size = 2000
 
-		hidden_dims = int(sys.argv[3])
-		lookback = int(sys.argv[4])
-		lr = float(sys.argv[5])
+		#hidden_dims = int(sys.argv[3])
+		#lookback = int(sys.argv[4])
+		#lr = float(sys.argv[5])
 
 		# get the data set vocabulary
 		vocab = pd.read_table(data_folder + "/vocab.wiki.txt", header=None, sep="\s+", index_col=0, names=['count', 'freq'], )
@@ -685,11 +699,12 @@ if __name__ == "__main__":
 		q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
 		##########################
+		lr = 1.0; lookback = 5; hidden_dims=25
 		rnn = RNN(vocab_size, hidden_dims, vocab_size)
-		rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=1)
-		np.save(data_folder + '/rnn.U.npy', rnn.U)
-		np.save(data_folder + '/rnn.V.npy', rnn.V)
-		np.save(data_folder + '/rnn.W.npy', rnn.W)
+		rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
+		#np.save(data_folder + '/U.npy', rnn.U)
+		#np.save(data_folder + '/V.npy', rnn.V)
+		#np.save(data_folder + '/W.npy', rnn.W)
 		##########################
 
 		run_loss = -1
@@ -704,8 +719,8 @@ if __name__ == "__main__":
 		change this to different values, or use it to get you started with your own testing class
 		'''
 		train_size = 1000
-		dev_size = 1000
-		vocab_size = 2000
+		dev_size = 100
+		vocab_size = 10000
 
 		hdim = int(sys.argv[3])
 		lookback = int(sys.argv[4])
@@ -738,19 +753,86 @@ if __name__ == "__main__":
 
 
 		##########################
-		rnn = RNN(vocab_size, hdim, vocab_size)
-		rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
-		np.save(data_folder + '/rnn-np.U.npy', rnn.U)
-		np.save(data_folder + '/rnn-np.V.npy', rnn.V)
-		np.save(data_folder + '/rnn-np.W.npy', rnn.W)
+		hidden_dims = 25
+		lookback = 10
+		lr = 2.0
+		rnn = RNN(vocab_size, hidden_dims, 2)
+		rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10, anneal=10)
 		##########################
-		acc = 0.
-		for i in range(len(X_dev)):
-			acc += rnn.compute_acc_np(X_dev[i], D_dev[i])
-			acc /= len(X_dev)
-		
 
-		print("Accuracy: %.03f" % acc)
+		acc = 0.
+
+	if mode == "train-np-pos":
+		'''
+		EXERCISE 5. Sentences are converted into POS tags and trained as in train-np.
+		Might need nltk.pos_tag() installed!
+		'''
+		import nltk
+
+		train_size = 50000
+		dev_size = 1000
+
+		#The POS tags used here
+		set_of_tags = ['LS', 'TO', 'VBN', "''", 'WP', 'UH', 'VBG', \
+               'JJ', 'VBZ', '--', 'VBP', 'NN', 'DT', 'PRP', \
+               ':', 'WP$', 'NNPS', 'PRP$', 'WDT', '(', ')', \
+               '.', ',', '``', '$', 'RB', 'RBR', 'RBS', 'VBD', \
+               'IN', 'FW', 'RP', 'JJR', 'JJS', 'PDT', 'MD', 'VB', \
+               'WRB', 'NNP', 'EX', 'NNS', 'SYM', 'CC', 'CD', 'POS']
+
+		def parse_sents(sentences):
+			"""
+			Convert sentences to POS tags
+			"""
+			parsed = []
+			for i in range(len(sentences)):
+				yes = nltk.pos_tag(sentences[i][1:])
+				no = [sentences[i][0]]
+				for j in range(len(yes)):
+					if yes[j][0] in set_of_tags:
+						no += [yes[j][0]]
+					else:
+						no += [yes[j][1]]
+				parsed += [no]
+			return parsed
+
+		# load training data
+		sents_train = load_np_dataset(data_folder + '/wiki-train.txt')
+		sents_train_pos = parse_sents(sents_train[:train_size])
+		print(train_size)
+		print(len(sents_train_pos))
+		# load development data
+		sents_dev = load_np_dataset(data_folder + '/wiki-dev.txt')
+		sents_dev_pos = parse_sents(sents_dev[:dev_size])
+
+		##########################
+		"""
+		Get the data set vocabulary by looping over the whole data set
+		and appending unknown items
+		"""
+		vocab = ['VBZ', 'VBP'] # These need to come first
+		for i in sents_train_pos+sents_dev_pos:
+		    for j in i:
+		        if j not in vocab:
+		            vocab += [j]
+		num_to_word = dict(enumerate(vocab))
+		word_to_num = invert_dict(num_to_word)
+		vocab_size = len(vocab)
+		##########################
+
+		#Finalize data sets
+		S_train = docs_to_indices(sents_train_pos, word_to_num, 0, 0)
+		X_train, D_train = seqs_to_npXY(S_train)
+		S_dev = docs_to_indices(sents_dev_pos, word_to_num, 0, 0)
+		X_dev, D_dev = seqs_to_npXY(S_dev)
+
+		#Params
+		hidden_dims = 25
+		lookback = 10
+		lr = 2.0
+
+		rnn = RNN(vocab_size, hidden_dims, 2)
+		rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10, anneal=10)
 
 
 	if mode == "predict-lm":
