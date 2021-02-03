@@ -739,7 +739,7 @@ if __name__ == "__main__":
 
 		##########################
 		rnn = RNN(vocab_size, hdim, 2)
-		rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
+		rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
 		np.save(data_folder + '/rnn-np.U.npy', rnn.U)
 		np.save(data_folder + '/rnn-np.V.npy', rnn.V)
 		np.save(data_folder + '/rnn-np.W.npy', rnn.W)
