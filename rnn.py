@@ -635,7 +635,7 @@ class RNN(object):
 		print("setting U, V, W to matrices from best epoch")
 		self.U, self.V, self.W = bestU, bestV, bestW
 
-		return best_loss
+		return best_loss, best_acc
 
 
 if __name__ == "__main__":
@@ -686,16 +686,25 @@ if __name__ == "__main__":
 
 		##########################
 		rnn = RNN(vocab_size, hidden_dims, vocab_size)
-		rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
+		run_loss = rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
+
 		np.save(data_folder + '/rnn.U.npy', rnn.U)
 		np.save(data_folder + '/rnn.V.npy', rnn.V)
 		np.save(data_folder + '/rnn.W.npy', rnn.W)
 		##########################
 
-		run_loss = -1
-		adjusted_loss = -1
+		adjusted_loss = adjust_loss(run_loss, fraction_lost, q)
 		print("Unadjusted: %.03f" % np.exp(run_loss))
 		print("Adjusted for missing vocab: %.03f" % np.exp(adjusted_loss))
+
+		docs = load_lm_dataset(data_folder + '/wiki-test.txt')
+		S_test = docs_to_indices(docs, word_to_num, 1, 1)
+		X_test, D_test = seqs_to_lmXY(S_test)
+
+		test_loss = rnn.compute_mean_loss(X_test, D_test)
+		adjusted_test_loss = adjust_loss(test_loss, fraction_lost, q)
+		print("Unadjusted test: %.03f" % np.exp(test_loss))
+		print("Adjusted test for missing vocab: %.03f" % np.exp(adjusted_test_loss))
 
 
 	if mode == "train-np":
@@ -739,15 +748,11 @@ if __name__ == "__main__":
 
 		##########################
 		rnn = RNN(vocab_size, hdim, 2)
-		rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
+		loss, acc = rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
 		np.save(data_folder + '/rnn-np.U.npy', rnn.U)
 		np.save(data_folder + '/rnn-np.V.npy', rnn.V)
 		np.save(data_folder + '/rnn-np.W.npy', rnn.W)
 		##########################
-
-		acc = 0.
-
-		print("Accuracy: %.03f" % acc)
 
 
 	if mode == "predict-lm":
