@@ -603,6 +603,8 @@ class RNN(object):
 			loss = sum([loss_function(X_dev[i], D_dev[i]) for i in range(len(X_dev))]) / loss_sum
 			acc = sum([self.compute_acc_np(X_dev[i], D_dev[i]) for i in range(len(X_dev))]) / len(X_dev)
 			if epoch == epochs-1:
+				print('\n')
+				print('Misclassified sentences:')
 				for i in range(len(X_dev)):
 					x = X_dev[i]
 					d = D_dev[i]
@@ -653,227 +655,79 @@ class RNN(object):
 
 
 if __name__ == "__main__":
-	print(sys.argv[1].lower())
-	mode = sys.argv[1].lower()
-	data_folder = sys.argv[2]
-	np.random.seed(2018)
 
-	if mode == "train-lm":
-		'''
-		code for training language model.
-		change this to different values, or use it to get you started with your own testing class
-		'''
-		train_size = 1000
-		dev_size = 1000
-		vocab_size = 2000
+	import nltk
+	nltk.download('averaged_perceptron_tagger')
+	nltk.download('tagsets')
 
-		#hidden_dims = int(sys.argv[3])
-		#lookback = int(sys.argv[4])
-		#lr = float(sys.argv[5])
+	data_folder = sys.argv[1]
+	'''
+	EXERCISE 5. Sentences are converted into POS tags and trained as in train-np.
+	Needs nltk.pos_tag() installed!
+	'''
 
-		# get the data set vocabulary
-		vocab = pd.read_table(data_folder + "/vocab.wiki.txt", header=None, sep="\s+", index_col=0, names=['count', 'freq'], )
-		num_to_word = dict(enumerate(vocab.index[:vocab_size]))
-		word_to_num = invert_dict(num_to_word)
+	train_size = 25000
+	dev_size = 1000
 
-		# calculate loss vocabulary words due to vocab_size
-		fraction_lost = fraq_loss(vocab, word_to_num, vocab_size)
-		print("Retained %d words from %d (%.02f%% of all tokens)\n" % (vocab_size, len(vocab), 100*(1-fraction_lost)))
+	#The POS tags used here
+	tagdict = nltk.data.load('help/tagsets/upenn_tagset.pickle')
+	set_of_tags = list(tagdict.keys())
 
-		docs = load_lm_dataset(data_folder + '/wiki-train.txt')
-		S_train = docs_to_indices(docs, word_to_num, 1, 1)
-		X_train, D_train = seqs_to_lmXY(S_train)
-
-		# Load the dev set (for tuning hyperparameters)
-		docs = load_lm_dataset(data_folder + '/wiki-dev.txt')
-		S_dev = docs_to_indices(docs, word_to_num, 1, 1)
-		X_dev, D_dev = seqs_to_lmXY(S_dev)
-
-		X_train = X_train[:train_size]
-		D_train = D_train[:train_size]
-		X_dev = X_dev[:dev_size]
-		D_dev = D_dev[:dev_size]
-
-		# q = best unigram frequency from omitted vocab
-		# this is the best expected loss out of that set
-		q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
-
-		##########################
-		lr = 1.0; lookback = 5; hidden_dims=25
-		rnn = RNN(vocab_size, hidden_dims, vocab_size)
-		rnn.train(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10)
-		#np.save(data_folder + '/rnn.U.npy', rnn.U)
-		#np.save(data_folder + '/rnn.V.npy', rnn.V)
-		#np.save(data_folder + '/rnn.W.npy', rnn.W)
-		##########################
-
-		run_loss = -1
-		adjusted_loss = -1
-		print("Unadjusted: %.03f" % np.exp(run_loss))
-		print("Adjusted for missing vocab: %.03f" % np.exp(adjusted_loss))
-
-
-	if mode == "train-np":
-		'''
-		starter code for parameter estimation.
-		change this to different values, or use it to get you started with your own testing class
-		'''
-		train_size = 1000
-		dev_size = 100
-		vocab_size = 10000
-
-		hdim = int(sys.argv[3])
-		lookback = int(sys.argv[4])
-		lr = float(sys.argv[5])
-
-		# get the data set vocabulary
-		vocab = pd.read_table(data_folder + "/vocab.wiki.txt", header=None, sep="\s+", index_col=0, names=['count', 'freq'], )
-		num_to_word = dict(enumerate(vocab.index[:vocab_size]))
-		word_to_num = invert_dict(num_to_word)
-
-		# calculate loss vocabulary words due to vocab_size
-		fraction_lost = fraq_loss(vocab, word_to_num, vocab_size)
-		print("Retained %d words from %d (%.02f%% of all tokens)\n" % (vocab_size, len(vocab), 100*(1-fraction_lost)))
-
-		# load training data
-		sents = load_np_dataset(data_folder + '/wiki-train.txt')
-		S_train = docs_to_indices(sents, word_to_num, 0, 0)
-		X_train, D_train = seqs_to_npXY(S_train)
-
-		X_train = X_train[:train_size]
-		Y_train = D_train[:train_size]
-
-		# load development data
-		sents = load_np_dataset(data_folder + '/wiki-dev.txt')
-		S_dev = docs_to_indices(sents, word_to_num, 0, 0)
-		X_dev, D_dev = seqs_to_npXY(S_dev)
-
-		X_dev = X_dev[:dev_size]
-		D_dev = D_dev[:dev_size]
-
-
-		##########################
-		hidden_dims = 25
-		lookback = 10
-		lr = 2.0
-		rnn = RNN(vocab_size, hidden_dims, 2)
-		rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10, anneal=10)
-		##########################
-
-		acc = 0.
-
-	if mode == "train-np-pos":
-		'''
-		EXERCISE 5. Sentences are converted into POS tags and trained as in train-np.
-		Might need nltk.pos_tag() installed!
-		'''
-		import nltk
-
-		train_size = 50000
-		dev_size = 1000
-
-		#The POS tags used here
-		set_of_tags = ['LS', 'TO', 'VBN', "''", 'WP', 'UH', 'VBG', \
-               'JJ', 'VBZ', '--', 'VBP', 'NN', 'DT', 'PRP', \
-               ':', 'WP$', 'NNPS', 'PRP$', 'WDT', '(', ')', \
-               '.', ',', '``', '$', 'RB', 'RBR', 'RBS', 'VBD', \
-               'IN', 'FW', 'RP', 'JJR', 'JJS', 'PDT', 'MD', 'VB', \
-               'WRB', 'NNP', 'EX', 'NNS', 'SYM', 'CC', 'CD', 'POS']
-
-		def parse_sents(sentences):
-			"""
-			Convert sentences to POS tags
-			"""
-			parsed = []
-			for i in range(len(sentences)):
-				yes = nltk.pos_tag(sentences[i][1:])
-				no = [sentences[i][0]]
-				for j in range(len(yes)):
-					if yes[j][0] in set_of_tags:
-						no += [yes[j][0]]
-					else:
-						no += [yes[j][1]]
-				parsed += [no]
-			return parsed
-
-		# load training data
-		sents_train = load_np_dataset(data_folder + '/wiki-train.txt')
-		sents_train_pos = parse_sents(sents_train[:train_size])
-		print(train_size)
-		print(len(sents_train_pos))
-		# load development data
-		sents_dev = load_np_dataset(data_folder + '/wiki-dev.txt')
-		sents_dev_pos = parse_sents(sents_dev[:dev_size])
-
-		##########################
+	def parse_sents(sentences):
 		"""
-		Get the data set vocabulary by looping over the whole data set
-		and appending unknown items
+		Convert sentences to POS tags
 		"""
-		vocab = ['VBZ', 'VBP'] # These need to come first
-		for i in sents_train_pos+sents_dev_pos:
-		    for j in i:
-		        if j not in vocab:
-		            vocab += [j]
-		num_to_word = dict(enumerate(vocab))
-		word_to_num = invert_dict(num_to_word)
-		vocab_size = len(vocab)
-		##########################
+		pos_tags_list = []
+		#For each sentence:
+		for i in range(len(sentences)):
+			#Create a list of tuples of word and pos tag
+			tuples = nltk.pos_tag(sentences[i][1:])
+			#The number (VBZ or VBP)
+			pos_tags = [sentences[i][0]]
+			for j in range(len(tuples)):
+				#If already a POS tag, keep it
+				if tuples[j][0] in set_of_tags:
+					pos_tags += [tuples[j][0]]
+				#Else, replace with POS tag
+				else:
+					pos_tags += [tuples[j][1]]
+			pos_tags_list += [pos_tags]
+		return pos_tags_list
 
-		#Finalize data sets
-		S_train = docs_to_indices(sents_train_pos, word_to_num, 0, 0)
-		X_train, D_train = seqs_to_npXY(S_train)
-		S_dev = docs_to_indices(sents_dev_pos, word_to_num, 0, 0)
-		X_dev, D_dev = seqs_to_npXY(S_dev)
+	# load training data
+	sents_train = load_np_dataset(data_folder + '/wiki-train.txt')
+	sents_train_pos = parse_sents(sents_train[:train_size])
+	print(train_size)
+	print(len(sents_train_pos))
+	# load development data
+	sents_dev = load_np_dataset(data_folder + '/wiki-dev.txt')
+	sents_dev_pos = parse_sents(sents_dev[:dev_size])
 
-		#Params
-		hidden_dims = 25
-		lookback = 10
-		lr = 2.0
+	##########################
+	"""
+	Get the data set vocabulary by looping over the whole data set
+	and appending unknown items
+	"""
+	vocab = ['VBZ', 'VBP'] # These need to come first
+	for i in sents_train_pos+sents_dev_pos:
+	    for j in i:
+	        if j not in vocab:
+	            vocab += [j]
+	num_to_word = dict(enumerate(vocab))
+	word_to_num = invert_dict(num_to_word)
+	vocab_size = len(vocab)
+	##########################
 
-		rnn = RNN(vocab_size, hidden_dims, 2)
-		rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10, anneal=10)
+	#Finalize data sets
+	S_train = docs_to_indices(sents_train_pos, word_to_num, 0, 0)
+	X_train, D_train = seqs_to_npXY(S_train)
+	S_dev = docs_to_indices(sents_dev_pos, word_to_num, 0, 0)
+	X_dev, D_dev = seqs_to_npXY(S_dev)
 
+	#Params
+	hidden_dims = 25
+	lookback = 20
+	lr = 5.0
 
-	if mode == "predict-lm":
-
-		data_folder = sys.argv[2]
-		rnn_folder = sys.argv[3]
-
-		# get saved RNN matrices and setup RNN
-		U,V,W = np.load(rnn_folder + "/rnn.U.npy"), np.load(rnn_folder + "/rnn.V.npy"), np.load(rnn_folder + "/rnn.W.npy")
-		vocab_size = len(V[0])
-		hdim = len(U[0])
-
-		dev_size = 1000
-
-		r = RNN(vocab_size, hdim, vocab_size)
-		r.U = U
-		r.V = V
-		r.W = W
-
-		# get vocabulary
-		vocab = pd.read_table(data_folder + "/vocab.wiki.txt", header=None, sep="\s+", index_col=0, names=['count', 'freq'], )
-		num_to_word = dict(enumerate(vocab.index[:vocab_size]))
-		word_to_num = invert_dict(num_to_word)
-
-		# Load the dev set (for tuning hyperparameters)
-		docs = load_lm_np_dataset(data_folder + '/wiki-dev.txt')
-		S_np_dev = docs_to_indices(docs, word_to_num, 1, 0)
-		X_np_dev, D_np_dev = seqs_to_lmnpXY(S_np_dev)
-
-		X_np_dev = X_np_dev[:dev_size]
-		D_np_dev = D_np_dev[:dev_size]
-
-		np_acc = r.compute_acc_lmnp(X_np_dev, D_np_dev)
-
-		print('Number prediction accuracy on dev set:', np_acc)
-
-		# load test data
-		sents = load_lm_np_dataset(data_folder + '/wiki-test.txt')
-		S_np_test = docs_to_indices(sents, word_to_num, 1, 0)
-		X_np_test, D_np_test = seqs_to_lmnpXY(S_np_test)
-
-		np_acc_test = r.compute_acc_lmnp(X_np_test, D_np_test)
-
-		print('Number prediction accuracy on test set:', np_acc_test)
+	rnn = RNN(vocab_size, hidden_dims, 2)
+	rnn.train_np(X_train, D_train, X_dev, D_dev, learning_rate=lr, back_steps=lookback, epochs=10, anneal=10, batch_size=50)
