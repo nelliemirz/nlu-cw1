@@ -11,8 +11,7 @@ from sys import stdout
 class RNN(object):
 	'''
 	This class implements Recurrent Neural Networks.
-
-	You should implement code in the following functions:
+	
 		predict				->	predict an output sequence for a given input sequence
 		acc_deltas			->	accumulate update weights for the RNNs weight matrices, standard Back Propagation
 		acc_deltas_bptt		->	accumulate update weights for the RNNs weight matrices, using Back Propagation Through Time
@@ -22,15 +21,11 @@ class RNN(object):
 		compute_mean_loss	->	compute the average loss over all sequences in a corpus
 		generate_sequence	->	use the RNN to generate a new (unseen) sequnce
 
-	Do NOT modify any other methods!
-	Do NOT change any method signatures!
 	'''
 
 	def __init__(self, vocab_size, hidden_dims, out_vocab_size):
 		'''
 		initialize the RNN with random weight matrices.
-
-		DO NOT CHANGE THIS
 
 		vocab_size		size of vocabulary that is being used
 		hidden_dims		number of hidden units
@@ -53,8 +48,6 @@ class RNN(object):
 	def apply_deltas(self, learning_rate):
 		'''
 		update the RNN's weight matrices with corrections accumulated over some training instances
-
-		DO NOT CHANGE THIS
 
 		learning_rate	scaling factor for update weights
 		'''
@@ -288,12 +281,9 @@ class RNN(object):
 		return 1 if argmax(y[t]) == d[0], 0 otherwise
 		'''
 
-
-		##########################
 		y, s = self.predict(x)
 		if np.argmax(y[-1]) == d[0]:
 			return 1
-		##########################
 		return 0
 
 
@@ -308,24 +298,18 @@ class RNN(object):
 		return 1 if p(d[0]) > p(d[1]), 0 otherwise
 		'''
 
-		##########################
 		y, s = self.predict(x)
 		if y[-1][d[0]] > y[-1][d[1]]:
 			return 1
-		##########################
 		return 0
 
 
 	def compute_acc_lmnp(self, X_dev, D_dev):
 		'''
-
-		DO NOT CHANGE THIS
-
 		X_dev			a list of input vectors, e.g., 		[[5, 4, 2], [7, 3, 8]]
 		D_dev			a list of pair verb forms (plural/singular), e.g., 	[[4, 9], [6, 5]]
 		'''
 		acc = sum([self.compare_num_pred(X_dev[i], D_dev[i]) for i in range(len(X_dev))]) / len(X_dev)
-
 		return acc
 
 
@@ -340,8 +324,6 @@ class RNN(object):
 		'''
 
 		mean_loss = 0.
-
-		##########################
 		total_length = 0
 		for i in range(len(X)):
 			#
@@ -349,7 +331,6 @@ class RNN(object):
 			loss = self.compute_loss(X[i], D[i])
 			mean_loss += loss
 		mean_loss /= (total_length)
-		##########################
 
 		return mean_loss
 
@@ -357,8 +338,6 @@ class RNN(object):
 	def train(self, X, D, X_dev, D_dev, epochs=10, learning_rate=0.5, anneal=5, back_steps=0, batch_size=100, min_change=0.0001, log=True):
 		'''
 		train the RNN on some training set X, D while optimizing the loss on a dev set X_dev, D_dev
-
-		DO NOT CHANGE THIS
 
 		training stops after the first of the following is true:
 			* number of epochs reached
@@ -496,8 +475,6 @@ class RNN(object):
 	def train_np(self, X, D, X_dev, D_dev, epochs=10, learning_rate=0.5, anneal=5, back_steps=0, batch_size=100, min_change=0.0001, log=True):
 		'''
 		train the RNN on some training set X, D while optimizing the loss on a dev set X_dev, D_dev
-
-		DO NOT CHANGE THIS
 
 		training stops after the first of the following is true:
 			* number of epochs reached
@@ -718,7 +695,7 @@ if __name__ == "__main__":
 	vocab_size = len(vocab)
 	##########################
 
-	#Finalize data sets
+	# Finalize data sets
 	S_train = docs_to_indices(sents_train_pos, word_to_num, 0, 0)
 	X_train, D_train = seqs_to_npXY(S_train)
 	S_dev = docs_to_indices(sents_dev_pos, word_to_num, 0, 0)
