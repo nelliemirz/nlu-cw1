@@ -30,8 +30,6 @@ class RNN(object):
 		'''
 		initialize the RNN with random weight matrices.
 
-		DO NOT CHANGE THIS
-
 		vocab_size		size of vocabulary that is being used
 		hidden_dims		number of hidden units
 		out_vocab_size	size of the output vocabulary
@@ -53,9 +51,7 @@ class RNN(object):
 	def apply_deltas(self, learning_rate):
 		'''
 		update the RNN's weight matrices with corrections accumulated over some training instances
-
-		DO NOT CHANGE THIS
-
+		
 		learning_rate	scaling factor for update weights
 		'''
 		# apply updates to U, V, W
@@ -87,11 +83,9 @@ class RNN(object):
 		y = np.zeros((len(x), self.out_vocab_size))
 
 		for t in range(len(x)):
-			##########################
 			x_t_onehot = make_onehot(x[t], self.vocab_size)
 			s[t] = sigmoid(np.dot(self.U, s[t-1]) + np.dot(self.V, x_t_onehot))
 			y[t] = softmax(np.dot(self.W, s[t]))
-			##########################
 		return y, s
 
 	def acc_deltas(self, x, d, y, s):
@@ -112,7 +106,6 @@ class RNN(object):
 		'''
 
 		for t in reversed(range(len(x))):
-			##########################
 
 			delta_out_t = make_onehot(d[t], self.out_vocab_size)-y[t]
 			delta_in_t = np.dot(self.W.T, delta_out_t)*s[t]*(1-s[t])
@@ -120,7 +113,6 @@ class RNN(object):
 			self.deltaW += np.outer(delta_out_t, s[t])
 			self.deltaV += np.outer(delta_in_t, make_onehot(x[t], self.vocab_size))
 			self.deltaU += np.outer(delta_in_t, s[t-1])
-			##########################
 
 
 	def acc_deltas_np(self, x, d, y, s):
@@ -140,8 +132,6 @@ class RNN(object):
 
 		no return values
 		'''
-
-		##########################
 		t = len(x)-1
 		delta_out_t = make_onehot(d[0], self.out_vocab_size)-y[-1]
 		delta_in_t = np.dot(self.W.T, delta_out_t)*s[-2]*(1-s[-2])
@@ -149,7 +139,6 @@ class RNN(object):
 		self.deltaW += np.outer(delta_out_t, s[-2])
 		self.deltaV += np.outer(delta_in_t, make_onehot(x[-1], self.vocab_size))
 		self.deltaU += np.outer(delta_in_t, s[-3])
-		##########################
 
 
 	def acc_deltas_bptt(self, x, d, y, s, steps):
@@ -171,7 +160,7 @@ class RNN(object):
 		'''
 		for t in reversed(range(len(x))):
 			# print("time {0}".format(t))
-			##########################
+			
 			delta_out_t = make_onehot(d[t], self.out_vocab_size)-y[t]
 			delta_in_t = np.dot(self.W.T, delta_out_t)*s[t]*(1-s[t])
 
@@ -186,8 +175,6 @@ class RNN(object):
 			self.deltaW += np.outer(delta_out_t, s[t])
 			self.deltaV += np.outer(delta_in_t, make_onehot(x[t], self.vocab_size))
 			self.deltaU += np.outer(delta_in_t, s[t-1])
-
-			##########################
 
 
 	def acc_deltas_bptt_np(self, x, d, y, s, steps):
@@ -208,8 +195,6 @@ class RNN(object):
 
 		no return values
 		'''
-
-		##########################
 		t = len(x)-1
 
 		delta_out_t = make_onehot(d[0], self.out_vocab_size)-y[t]
@@ -226,7 +211,6 @@ class RNN(object):
 		self.deltaW += np.outer(delta_out_t, s[t])
 		self.deltaV += np.outer(delta_in_t, make_onehot(x[t], self.vocab_size))
 		self.deltaU += np.outer(delta_in_t, s[t-1])
-		##########################
 
 
 	def compute_loss(self, x, d):
@@ -243,14 +227,14 @@ class RNN(object):
 
 		loss = 0.
 
-		##########################
+
 		#assert len(x)==len(d)
 
 		y, s = self.predict(x)
 		for t in range(len(x)):
 			d_t_onehot = make_onehot(d[t], self.out_vocab_size)
 			loss -= np.inner(d_t_onehot, np.log(y[t]))
-			##########################
+
 		return loss
 
 
@@ -268,11 +252,9 @@ class RNN(object):
 
 		loss = 0.
 
-		##########################
 		y, s = self.predict(x)
 		d_t_onehot = make_onehot(d[0], self.out_vocab_size)
 		loss -= np.inner(d_t_onehot, np.log(y[-1]))
-		##########################
 
 		return loss
 
@@ -288,12 +270,10 @@ class RNN(object):
 		return 1 if argmax(y[t]) == d[0], 0 otherwise
 		'''
 
-
-		##########################
 		y, s = self.predict(x)
 		if np.argmax(y[-1]) == d[0]:
 			return 1
-		##########################
+
 		return 0
 
 
@@ -308,11 +288,10 @@ class RNN(object):
 		return 1 if p(d[0]) > p(d[1]), 0 otherwise
 		'''
 
-		##########################
 		y, s = self.predict(x)
 		if y[-1][d[0]] > y[-1][d[1]]:
 			return 1
-		##########################
+
 		return 0
 
 
@@ -341,7 +320,6 @@ class RNN(object):
 
 		mean_loss = 0.
 
-		##########################
 		total_length = 0
 		for i in range(len(X)):
 			#
@@ -349,7 +327,6 @@ class RNN(object):
 			loss = self.compute_loss(X[i], D[i])
 			mean_loss += loss
 		mean_loss /= (total_length)
-		##########################
 
 		return mean_loss
 
@@ -358,7 +335,6 @@ class RNN(object):
 		'''
 		train the RNN on some training set X, D while optimizing the loss on a dev set X_dev, D_dev
 
-		DO NOT CHANGE THIS
 
 		training stops after the first of the following is true:
 			* number of epochs reached
@@ -496,8 +472,6 @@ class RNN(object):
 	def train_np(self, X, D, X_dev, D_dev, epochs=10, learning_rate=0.5, anneal=5, back_steps=0, batch_size=100, min_change=0.0001, log=True):
 		'''
 		train the RNN on some training set X, D while optimizing the loss on a dev set X_dev, D_dev
-
-		DO NOT CHANGE THIS
 
 		training stops after the first of the following is true:
 			* number of epochs reached
